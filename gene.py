@@ -1,5 +1,11 @@
 import random
 
+FUNCTION_A1 = ["np.sin({})", "np.cos({})", "np.exp({})", "np.log(abs({}))"]
+FUNCTION_A2 = ["({} + {})", "({} - {})", "({} * {})", "({} / np.sqrt(1 + {}**2))"]
+ADF = ["G1({}, {})", "G2({}, {})"]  # only in main head
+TERMINAL = ["np.e", "np.pi"]
+INPUT_ARGUMENT = ["a", "b"]  # only in adf
+
 
 class TreeNode:
     left = None
@@ -10,31 +16,51 @@ class TreeNode:
 
 
 class Gene:
-    def __init__(self, head_len, FUNCTION_A1, FUNCTION_A2, TERMINAL):
+    def __init__(self, head_len, var_num=1, is_adf=False):
         self.head_len = head_len
+        self.var_num = var_num
+        self.is_adf = is_adf
+
         self.gene = None
         self.root = None
         self.expression = None
 
-        self.FUNCTION_A1 = FUNCTION_A1
-        self.FUNCTION_A2 = FUNCTION_A2
-        self.TERMINAL = TERMINAL
-
     def random_init(self):
         gene = []
-        FUNCTION = self.FUNCTION_A1 + self.FUNCTION_A2
-        TERMINAL = self.TERMINAL
-        flag = random.randint(0, 1)
-        for _ in range(self.head_len):
-            if flag == 1:
-                i = random.randint(0, len(FUNCTION) - 1)
-                gene.append(FUNCTION[i])
-            else:
-                i = random.randint(0, len(TERMINAL) - 1)
-                gene.append(TERMINAL[i])
-        for _ in range(self.head_len + 1):
-            i = random.randint(0, len(TERMINAL) - 1)
-            gene.append(TERMINAL[i])
+        FUNCTION = FUNCTION_A1 + FUNCTION_A2
+        if self.is_adf == True:
+            for _ in range(self.head_len):  # init head
+                element_type = random.randint(0, 1)
+                if element_type == 0:  # function
+                    i = random.randint(0, len(FUNCTION) - 1)
+                    gene.append(FUNCTION[i])
+                elif element_type == 1:  # input argument
+                    i = random.randint(0, len(INPUT_ARGUMENT) - 1)
+                    gene.append(INPUT_ARGUMENT[i])
+            for _ in range(self.head_len + 1):  # init tail
+                i = random.randint(0, len(INPUT_ARGUMENT) - 1)
+                gene.append(INPUT_ARGUMENT[i])
+        else:
+            for _ in range(self.head_len):  # init head
+                element_type = random.randint(0, 2)
+                if element_type == 0:  # function
+                    i = random.randint(0, len(FUNCTION) - 1)
+                    gene.append(FUNCTION[i])
+                elif element_type == 1:  # terminal
+                    i = random.randint(0, len(TERMINAL) - 1 + self.var_num)
+                    if i < len(TERMINAL):
+                        gene.append(TERMINAL[i])
+                    else:
+                        gene.append(f"inputs[{i-len(TERMINAL)}]")
+                elif element_type == 2:  # adf
+                    i = random.randint(0, len(ADF) - 1)
+                    gene.append(ADF[i])
+            for _ in range(self.head_len + 1):  # init tail
+                i = random.randint(0, len(TERMINAL) - 1 + self.var_num)
+                if i < len(TERMINAL):
+                    gene.append(TERMINAL[i])
+                else:
+                    gene.append(f"inputs[{i-len(TERMINAL)}]")
         self.gene = gene
 
     def construct(self):
@@ -46,13 +72,13 @@ class Gene:
         while len(q) != 0:
             node = q.pop(0)
 
-            if node.value in self.FUNCTION_A1:
+            if node.value in FUNCTION_A1:
                 # function nodes with arity 1 only have left child node
                 left = TreeNode(v.pop(0))
                 node.left = left
                 q.append(left)
 
-            elif node.value in self.FUNCTION_A2:
+            elif node.value in FUNCTION_A2 or node.value in ADF:
                 # function nodes with arity 2 have left and right child node
                 left = TreeNode(v.pop(0))
                 right = TreeNode(v.pop(0))
@@ -82,13 +108,7 @@ class Gene:
 
 
 if __name__ == "__main__":
-    FUNCTION_A1 = ["np.sin({})", "np.cos({})", "np.exp({})", "np.log(abs({}))"]
-    FUNCTION_A2 = ["{} + {}", "{} - {}", "{} * {}", "{} / np.sqrt(1+{}**2) "]
-    ADF = ["G1({}, {})", "G2({}, {})"]
-    TERMINAL = ["np.e", "np.pi"]
-    INPUT_ARGUMENT = ["a", "b"]
-
-    a = Gene(3, FUNCTION_A1, FUNCTION_A2, TERMINAL)
+    a = Gene(3, var_num=3, is_adf=False)
     a.random_init()
     print(a.gene)
     print(a.compile())

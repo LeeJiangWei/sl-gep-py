@@ -2,19 +2,11 @@ from gene import Gene
 import numpy as np
 import random
 
-FUNCTION_A1 = ["np.sin({})", "np.cos({})", "np.exp({})", "np.log(np.abs({}))"]
-FUNCTION_A2_MAIN = ["({} + {})", "({} - {})", "({} * {})", "({} / {})", "G1({}, {})", "G2({}, {})"]
-FUNCTION_A2_ADF = ["({} + {})", "({} - {})", "({} * {})", "({} / {})"]
-
-TERMINAL_MAIN = ["np.pi", "x"]
-TERMINAL_ADF = ["a", "b"]
-
-
 class Chromosome:
-    def __init__(self):
-        self.main_program = Gene(10, FUNCTION_A1, FUNCTION_A2_MAIN, TERMINAL_MAIN)
-        self.adf1 = Gene(3, FUNCTION_A1, FUNCTION_A2_ADF, TERMINAL_ADF)
-        self.adf2 = Gene(3, FUNCTION_A1, FUNCTION_A2_ADF, TERMINAL_ADF)
+    def __init__(self, var_num=1):
+        self.main_program = Gene(10, var_num=var_num, is_adf=False)
+        self.adf1 = Gene(3, is_adf=True)
+        self.adf2 = Gene(3, is_adf=True)
         self.main_program.random_init()
         self.adf1.random_init()
         self.adf2.random_init()
@@ -22,7 +14,7 @@ class Chromosome:
 
         self.fitness = -np.inf
 
-    def eval(self, x=1, y=1, z=1):
+    def eval(self, inputs=[]):
         self.main_program.compile()
         self.adf1.compile()
         self.adf2.compile()
