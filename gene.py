@@ -80,14 +80,13 @@ class Gene:
         self.expression = self.__compile_helper(self.root)
         return self.expression
 
-    def evaluate(self):
-        return eval(self.expression)
-
 
 if __name__ == "__main__":
     FUNCTION_A1 = ["np.sin({})", "np.cos({})", "np.exp({})", "np.log(abs({}))"]
-    FUNCTION_A2 = ["{} + {}", "{} - {}", "{} * {}", "{} / {} ", "G1({}, {})", "G2({}, {})"]
-    TERMINAL = ["np.e", "np.pi", "a", "b"]
+    FUNCTION_A2 = ["{} + {}", "{} - {}", "{} * {}", "{} / np.sqrt(1+{}**2) "]
+    ADF = ["G1({}, {})", "G2({}, {})"]
+    TERMINAL = ["np.e", "np.pi"]
+    INPUT_ARGUMENT = ["a", "b"]
 
     a = Gene(3, FUNCTION_A1, FUNCTION_A2, TERMINAL)
     a.random_init()
