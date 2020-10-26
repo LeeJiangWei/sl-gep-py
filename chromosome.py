@@ -2,8 +2,9 @@ from gene import Gene
 import numpy as np
 import random
 
+
 class Chromosome:
-    def __init__(self, var_num=1):
+    def __init__(self, var_num=0):
         self.main_program = Gene(10, var_num=var_num, is_adf=False)
         self.adf1 = Gene(3, is_adf=True)
         self.adf2 = Gene(3, is_adf=True)
@@ -14,7 +15,9 @@ class Chromosome:
 
         self.fitness = -np.inf
 
-    def eval(self, inputs=[]):
+    def eval(self, inputs=None):
+        if inputs is None:
+            inputs = []
         self.main_program.compile()
         self.adf1.compile()
         self.adf2.compile()

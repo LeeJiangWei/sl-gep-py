@@ -16,7 +16,7 @@ class TreeNode:
 
 
 class Gene:
-    def __init__(self, head_len, var_num=1, is_adf=False):
+    def __init__(self, head_len, var_num=0, is_adf=False):
         self.head_len = head_len
         self.var_num = var_num
         self.is_adf = is_adf
@@ -28,7 +28,7 @@ class Gene:
     def random_init(self):
         gene = []
         FUNCTION = FUNCTION_A1 + FUNCTION_A2
-        if self.is_adf == True:
+        if self.is_adf:
             for _ in range(self.head_len):  # init head
                 element_type = random.randint(0, 1)
                 if element_type == 0:  # function
@@ -51,7 +51,7 @@ class Gene:
                     if i < len(TERMINAL):
                         gene.append(TERMINAL[i])
                     else:
-                        gene.append(f"inputs[{i-len(TERMINAL)}]")
+                        gene.append(f"inputs[{i - len(TERMINAL)}]")
                 elif element_type == 2:  # adf
                     i = random.randint(0, len(ADF) - 1)
                     gene.append(ADF[i])
@@ -60,7 +60,7 @@ class Gene:
                 if i < len(TERMINAL):
                     gene.append(TERMINAL[i])
                 else:
-                    gene.append(f"inputs[{i-len(TERMINAL)}]")
+                    gene.append(f"inputs[{i - len(TERMINAL)}]")
         self.gene = gene
 
     def construct(self):
