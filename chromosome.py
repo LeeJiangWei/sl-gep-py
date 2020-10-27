@@ -28,19 +28,19 @@ class Chromosome:
         def G2(a, b):
             return eval(self.adf2.expression)
 
-        try:
-            fitness = eval(self.main_program.expression)
-            if np.isnan(fitness):
-                self.fitness = np.inf
-            elif np.isinf(fitness):
-                self.fitness = np.inf
-            else:
-                self.fitness = fitness
-            return self.fitness
-        except ZeroDivisionError:
-            print("Warning: Divided by 0.")
-            self.fitness = np.inf
-            return self.fitness
+        return eval(self.main_program.expression)
+
+    def compute_fitness(self, data=None):
+        if data is None:
+            data = [[]]
+
+        sum_of_square = 0
+        for inputs in data:
+            sum_of_square += np.power(inputs[-1] - self.eval(inputs), 2)
+        fitness = np.sqrt(sum_of_square / len(data))
+
+        self.fitness = fitness
+        return fitness
 
 
 if __name__ == '__main__':

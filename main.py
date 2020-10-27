@@ -7,22 +7,19 @@ GENE_LEN = 34
 NP = 50
 c_rate = 0.05
 
+# read data
+nd, nv, data_set = read_data()
+
 population = []
 
-# random initialization
 for _ in range(NP):
-    population.append(Chromosome())
+    # random initialization
+    c = Chromosome(var_num=nv)
 
-# evaluate initial population
-data_set = read_data()
+    # evaluate initial population
+    c.compute_fitness()
 
-for ind in population:
-    sum_of_square = 0
-    for data in data_set:
-        o = ind.eval(x=data[0])
-        y = data[1]
-        square = (y - o) ** 2
-
+    population.append(c)
 
 while True:
     # mutation
