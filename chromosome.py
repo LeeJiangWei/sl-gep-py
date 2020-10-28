@@ -2,12 +2,14 @@ from gene import Gene
 import numpy as np
 import random
 
+MAIN_HEAD_LEN = 10
+ADF_HEAD_LEN = 3
 
 class Chromosome:
     def __init__(self, var_num=0):
-        self.main_program = Gene(10, var_num=var_num, is_adf=False)
-        self.adf1 = Gene(3, is_adf=True)
-        self.adf2 = Gene(3, is_adf=True)
+        self.main_program = Gene(MAIN_HEAD_LEN, var_num=var_num, is_adf=False)
+        self.adf1 = Gene(ADF_HEAD_LEN, is_adf=True)
+        self.adf2 = Gene(ADF_HEAD_LEN, is_adf=True)
         self.main_program.random_init()
         self.adf1.random_init()
         self.adf2.random_init()
@@ -38,6 +40,9 @@ class Chromosome:
         for inputs in data:
             sum_of_square += np.power(inputs[-1] - self.eval(inputs), 2)
         fitness = np.sqrt(sum_of_square / len(data))
+
+        if np.isinf(fitness) or np.isnan(fitness):
+            fitness = 100000
 
         self.fitness = fitness
         return fitness
