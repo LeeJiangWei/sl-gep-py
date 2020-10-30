@@ -1,22 +1,26 @@
 import random
+import re
 
-from gene import FUNCTION_A1, FUNCTION_A2, ADF
+from gene import FUNCTION, ADF, TERMINAL, INPUT_ARGUMENT
 from chromosome import Chromosome, MAIN_HEAD_LEN, ADF_HEAD_LEN
 from read_data import read_data
+from roulette_wheel import roulette_wheel
 
-GENE_LEN = 2*MAIN_HEAD_LEN+1 + 2*(2*ADF_HEAD_LEN+1)
+GENE_LEN = 2 * MAIN_HEAD_LEN + 1 + 2 * (2 * ADF_HEAD_LEN + 1)
 NP = 50
 c_rate = 0.05
 
 MAIN_START = 0
-MAIN_END = MAIN_START + 2*MAIN_HEAD_LEN+1
+MAIN_END = MAIN_START + 2 * MAIN_HEAD_LEN + 1
 ADF1_START = MAIN_END
-ADF1_END = ADF1_START + 2*ADF_HEAD_LEN+1
+ADF1_END = ADF1_START + 2 * ADF_HEAD_LEN + 1
 ADF2_START = ADF1_END
-ADF2_END = ADF2_START + 2*ADF_HEAD_LEN+1
+ADF2_END = ADF2_START + 2 * ADF_HEAD_LEN + 1
+
+FUNCTION_ADF = FUNCTION + ADF
 
 # read data
-nd, nv, data = read_data("./dataset/F49_2_training_data.txt")
+nd, nv, data = read_data()  # "./dataset/F49_2_training_data.txt"
 
 population = []
 
@@ -29,10 +33,13 @@ for _ in range(NP):
 
     population.append(c)
 
-while True:
+for epo in range(1000):
     # population.sort(key=lambda x: x.fitness)
     # best_individual = population[0]
     best_individual = sorted(population, key=lambda x: x.fitness)[0]
+
+    if epo % 10 == 0:
+        print("epoch: ", epo, best_individual.fitness, best_individual.gene)
 
     i = 0
     while i < NP:
@@ -50,57 +57,78 @@ while True:
         u = Chromosome(var_num=nv)
 
         # compute symbol frequency in main program
-        head_frequency = {}
-        head_sum = NP * MAIN_HEAD_LEN
-        tail_frequency = {}
-        tail_sum = NP * (MAIN_HEAD_LEN + 1)
-        func_num = 0
+        function_adf_count_list = [0] * len(FUNCTION_ADF)
+        terminal_count_list = [0] * (len(TERMINAL) + nv)
+
+        function_adf_count = 0
 
         for c in population:
-            for index, value in enumerate(c.gene):
-                if index < MAIN_HEAD_LEN:
-                    if value not in head_frequency.keys():
-                        head_frequency[value] = 0
-                    head_frequency[value] += 1
-
-                    if value in FUNCTION_A1+FUNCTION_A2+ADF:
-                        func_num += 1
+            for ind in range(MAIN_HEAD_LEN):
+                value = c.gene[ind]
+                if value in FUNCTION_ADF:
+                    function_adf_count_list[FUNCTION_ADF.index(value)] += 1
+                    function_adf_count += 1
+                elif value in TERMINAL:
+                    terminal_count_list[TERMINAL.index(value)] += 1
                 else:
-                    if value not in tail_frequency.keys():
-                        tail_frequency[value] = 0
-                    tail_frequency[value] += 1
+                    terminal_count_list[int(re.findall(r"\d+", value)[0]) + len(TERMINAL)] += 1
 
-        head_frequency = sorted(head_frequency.items(), key=lambda x: x[1])
-        tail_frequency = sorted(tail_frequency.items(), key=lambda x: x[1])
-        theta = func_num / head_sum # proportion of func and adf in head
+        theta = function_adf_count / (NP * MAIN_HEAD_LEN)
 
         for j in range(GENE_LEN):
             # compute mutate probability
             phi = 1 - (1 - F * int(best_individual.gene[j] != population[i].gene[j])) \
-                * (1 - F * int(population[r1].gene[j] != population[r2].gene[j]))
+                  * (1 - F * int(population[r1].gene[j] != population[r2].gene[j]))
 
             # mutate & crossover
-            if (random.random() < CR or j==k) and random.random() < phi:
+            if (random.random() < CR or j == k) and random.random() < phi:
                 # frequency-based assignment
-                u.gene[j] = 1
+                new_symbol = ""
                 # main head
-                if MAIN_START <= j < MAIN_END-MAIN_HEAD_LEN-1:
-                    pass
+                if MAIN_START <= j < MAIN_END - MAIN_HEAD_LEN - 1:
+                    if random.random() < theta:
+                        index = roulette_wheel(function_adf_count_list)
+                        new_symbol = FUNCTION_ADF[index]
+                    else:
+                        index = roulette_wheel(terminal_count_list)
+                        if index < len(TERMINAL):
+                            new_symbol = TERMINAL[index]
+                        else:
+                            new_symbol = f"inputs[{index - len(TERMINAL)}]"
                 # main tail
                 elif MAIN_START + MAIN_HEAD_LEN <= j < MAIN_END:
-                    pass
+                    index = roulette_wheel(terminal_count_list)
+                    if index < len(TERMINAL):
+                        new_symbol = TERMINAL[index]
+                    else:
+                        new_symbol = f"inputs[{index - len(TERMINAL)}]"
                 # adf head
-                elif ADF1_START <= j < ADF1_END-ADF_HEAD_LEN-1 or \
-                    ADF2_START <= j < ADF2_END-ADF_HEAD_LEN-1:
-                    pass
+                elif ADF1_START <= j < ADF1_END - ADF_HEAD_LEN - 1 or \
+                        ADF2_START <= j < ADF2_END - ADF_HEAD_LEN - 1:
+                    flag = random.randint(0, 1)
+                    if flag:
+                        index = random.randint(0, len(FUNCTION) - 1)
+                        new_symbol = FUNCTION[index]
+                    else:
+                        index = random.randint(0, len(INPUT_ARGUMENT) - 1)
+                        new_symbol = INPUT_ARGUMENT[index]
                 # adf tail
                 elif ADF1_START + ADF_HEAD_LEN <= j < ADF1_END or \
-                    ADF2_START + ADF_HEAD_LEN <= j < ADF2_END:
-                    pass
+                        ADF2_START + ADF_HEAD_LEN <= j < ADF2_END:
+                    index = random.randint(0, len(INPUT_ARGUMENT) - 1)
+                    new_symbol = INPUT_ARGUMENT[index]
+
+                u.gene[j] = new_symbol
             else:
-                u.gene[j] = population[i][j]
-        break
+                u.gene[j] = population[i].gene[j]
 
         # selection
+        u.compute_fitness(data)
+        if u.fitness < population[i].fitness:
+            population[i] = u
 
-    break
+        i += 1
+
+best_individual = sorted(population, key=lambda x: x.fitness)[0]
+print(best_individual.gene)
+print(best_individual.fitness)

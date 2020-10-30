@@ -2,6 +2,7 @@ import random
 
 FUNCTION_A1 = ["np.sin({})", "np.cos({})", "np.exp({})", "np.log(abs({}))"]
 FUNCTION_A2 = ["({} + {})", "({} - {})", "({} * {})", "({} / np.sqrt(1 + {}**2))"]
+FUNCTION = FUNCTION_A1 + FUNCTION_A2
 ADF = ["G1({}, {})", "G2({}, {})"]  # only in main head
 TERMINAL = ["np.e", "np.pi"]
 INPUT_ARGUMENT = ["a", "b"]  # only in adf
@@ -27,7 +28,6 @@ class Gene:
 
     def random_init(self):
         gene = []
-        FUNCTION = FUNCTION_A1 + FUNCTION_A2
         if self.is_adf:
             for _ in range(self.head_len):  # init head
                 element_type = random.randint(0, 1)
