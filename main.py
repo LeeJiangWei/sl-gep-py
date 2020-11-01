@@ -1,5 +1,6 @@
 import random
 import re
+import torch
 
 from gene import FUNCTION, ADF, TERMINAL, INPUT_ARGUMENT
 from chromosome import Chromosome, MAIN_HEAD_LEN, ADF_HEAD_LEN
@@ -21,6 +22,8 @@ FUNCTION_ADF = FUNCTION + ADF
 
 # read data
 nd, nv, data = read_data()  # "./dataset/F49_2_training_data.txt"
+cuda = torch.device("cuda")
+data = torch.tensor(data)
 
 population = []
 
@@ -33,19 +36,43 @@ for _ in range(NP):
 
     population.append(c)
 
-for epo in range(1000):
+for epo in range(1000000):
     # population.sort(key=lambda x: x.fitness)
     # best_individual = population[0]
     best_individual = sorted(population, key=lambda x: x.fitness)[0]
 
     if epo % 10 == 0:
-        print("epoch: ", epo, best_individual.fitness, best_individual.gene)
+        print("epoch:", epo, " fitness:", best_individual.fitness)
+        print(best_individual.gene)
+
+        if best_individual.fitness < 1e-5:
+            break
+
+    # compute symbol frequency in main program
+    function_adf_count_list = [0] * len(FUNCTION_ADF)
+    terminal_count_list = [0] * (len(TERMINAL) + nv)
+    function_adf_count = 0
+
+    # update frequency
+    for c in population:
+        for ind in range(MAIN_HEAD_LEN):
+            value = c.gene[ind]
+            if value in FUNCTION_ADF:
+                function_adf_count_list[FUNCTION_ADF.index(value)] += 1
+                function_adf_count += 1
+            elif value in TERMINAL:
+                terminal_count_list[TERMINAL.index(value)] += 1
+            else:
+                terminal_count_list[int(re.findall(r"\d+", value)[0]) + len(TERMINAL)] += 1
+
+    theta = function_adf_count / (NP * MAIN_HEAD_LEN)
 
     i = 0
     while i < NP:
         F = random.random()
         CR = random.random()
 
+        # pick 2 random distinct indexes of chromosome
         r1 = r2 = i
         while r1 == i:
             r1 = random.randint(0, NP - 1)
@@ -53,27 +80,8 @@ for epo in range(1000):
             r2 = random.randint(0, NP - 1)
         k = random.randint(0, GENE_LEN - 1)
 
-        # trail vector
+        # trial vector
         u = Chromosome(var_num=nv)
-
-        # compute symbol frequency in main program
-        function_adf_count_list = [0] * len(FUNCTION_ADF)
-        terminal_count_list = [0] * (len(TERMINAL) + nv)
-
-        function_adf_count = 0
-
-        for c in population:
-            for ind in range(MAIN_HEAD_LEN):
-                value = c.gene[ind]
-                if value in FUNCTION_ADF:
-                    function_adf_count_list[FUNCTION_ADF.index(value)] += 1
-                    function_adf_count += 1
-                elif value in TERMINAL:
-                    terminal_count_list[TERMINAL.index(value)] += 1
-                else:
-                    terminal_count_list[int(re.findall(r"\d+", value)[0]) + len(TERMINAL)] += 1
-
-        theta = function_adf_count / (NP * MAIN_HEAD_LEN)
 
         for j in range(GENE_LEN):
             # compute mutate probability
@@ -94,14 +102,14 @@ for epo in range(1000):
                         if index < len(TERMINAL):
                             new_symbol = TERMINAL[index]
                         else:
-                            new_symbol = f"inputs[{index - len(TERMINAL)}]"
+                            new_symbol = f"inputs[:, {index - len(TERMINAL)}]"
                 # main tail
                 elif MAIN_START + MAIN_HEAD_LEN <= j < MAIN_END:
                     index = roulette_wheel(terminal_count_list)
                     if index < len(TERMINAL):
                         new_symbol = TERMINAL[index]
                     else:
-                        new_symbol = f"inputs[{index - len(TERMINAL)}]"
+                        new_symbol = f"inputs[:, {index - len(TERMINAL)}]"
                 # adf head
                 elif ADF1_START <= j < ADF1_END - ADF_HEAD_LEN - 1 or \
                         ADF2_START <= j < ADF2_END - ADF_HEAD_LEN - 1:
@@ -124,7 +132,7 @@ for epo in range(1000):
 
         # selection
         u.compute_fitness(data)
-        if u.fitness < population[i].fitness:
+        if u.fitness <= population[i].fitness:
             population[i] = u
 
         i += 1

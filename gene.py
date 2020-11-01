@@ -1,10 +1,10 @@
 import random
 
-FUNCTION_A1 = ["np.sin({})", "np.cos({})", "np.exp({})", "np.log(abs({}))"]
-FUNCTION_A2 = ["({} + {})", "({} - {})", "({} * {})", "({} / np.sqrt(1 + {}**2))"]
+FUNCTION_A1 = ["torch.sin({})", "torch.cos({})", "torch.exp({})", "torch.log(torch.abs({}))"]
+FUNCTION_A2 = ["({} + {})", "({} - {})", "({} * {})", "({} / torch.sqrt(1.0 + {} ** 2))"]
 FUNCTION = FUNCTION_A1 + FUNCTION_A2
 ADF = ["G1({}, {})", "G2({}, {})"]  # only in main head
-TERMINAL = ["np.e", "np.pi"]
+TERMINAL = ["torch.tensor(np.pi)"]
 INPUT_ARGUMENT = ["a", "b"]  # only in adf
 
 
@@ -51,7 +51,7 @@ class Gene:
                     if i < len(TERMINAL):
                         gene.append(TERMINAL[i])
                     else:
-                        gene.append(f"inputs[{i - len(TERMINAL)}]")
+                        gene.append(f"inputs[:, {i - len(TERMINAL)}]")
                 elif element_type == 2:  # adf
                     i = random.randint(0, len(ADF) - 1)
                     gene.append(ADF[i])
@@ -60,7 +60,7 @@ class Gene:
                 if i < len(TERMINAL):
                     gene.append(TERMINAL[i])
                 else:
-                    gene.append(f"inputs[{i - len(TERMINAL)}]")
+                    gene.append(f"inputs[:, {i - len(TERMINAL)}]")
         self.gene = gene
 
     def construct(self):

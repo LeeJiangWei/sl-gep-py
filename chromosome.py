@@ -1,9 +1,11 @@
 from gene import Gene
 import numpy as np
 import random
+import torch
 
 MAIN_HEAD_LEN = 10
 ADF_HEAD_LEN = 3
+
 
 class Chromosome:
     def __init__(self, var_num=0):
@@ -17,9 +19,11 @@ class Chromosome:
 
         self.fitness = -np.inf
 
-    def eval(self, inputs=None):
-        if inputs is None:
-            inputs = []
+    def eval(self, inputs):
+        self.main_program.gene = self.gene[:(2 * MAIN_HEAD_LEN + 1)]
+        self.adf1.gene = self.gene[(2 * MAIN_HEAD_LEN + 1):(2 * MAIN_HEAD_LEN + 1) + (2 * ADF_HEAD_LEN + 1)]
+        self.adf2.gene = self.gene[(2 * MAIN_HEAD_LEN + 1) + (2 * ADF_HEAD_LEN + 1):(2 * MAIN_HEAD_LEN + 1) + 2 * (
+                2 * ADF_HEAD_LEN + 1)]
         self.main_program.compile()
         self.adf1.compile()
         self.adf2.compile()
@@ -32,16 +36,10 @@ class Chromosome:
 
         return eval(self.main_program.expression)
 
-    def compute_fitness(self, data=None):
-        if data is None:
-            data = [[]]
+    def compute_fitness(self, data):
+        fitness = torch.sqrt(torch.sum((self.eval(data) - data[:, -1]) ** 2) / len(data))
 
-        sum_of_square = 0
-        for inputs in data:
-            sum_of_square += np.power(inputs[-1] - self.eval(inputs), 2)
-        fitness = np.sqrt(sum_of_square / len(data))
-
-        if np.isinf(fitness) or np.isnan(fitness):
+        if torch.isinf(fitness) or torch.isnan(fitness):
             fitness = 100000
 
         self.fitness = fitness
