@@ -21,7 +21,7 @@ ADF2_END = ADF2_START + 2 * ADF_HEAD_LEN + 1
 FUNCTION_ADF = FUNCTION + ADF
 
 # read data
-nd, nv, data = read_data()  # "./dataset/F49_2_training_data.txt"
+nd, nv, data = read_data("dataset/F0_1_training_data.txt")  # "./dataset/F49_2_training_data.txt"
 cuda = torch.device("cuda")
 data = torch.tensor(data)
 
@@ -140,3 +140,7 @@ for epo in range(1000000):
 best_individual = sorted(population, key=lambda x: x.fitness)[0]
 print(best_individual.gene)
 print(best_individual.fitness)
+
+nd, nv, data = read_data("dataset/F0_1_testing_data.txt")
+data = torch.tensor(data)
+print("test error:", best_individual.compute_fitness(data))
